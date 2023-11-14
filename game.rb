@@ -180,6 +180,7 @@ def update()
     dx = ene["cx"] - $px
     dy = ene["cy"] - $py
   
+    # Todo: recalculate once every 0.5 s
     rads = Math.atan2(dy, dx) + Math::PI / 2.0
     vx = -Math.sin(rads) / 2
     vy = Math.cos(rads) / 2
