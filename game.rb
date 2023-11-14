@@ -5,7 +5,7 @@
 # version: 0.1
 # script:  ruby
 
-$b_top = 10
+$b_top = 20
 $b_bottom = 126
 $b_left = 10
 $b_right = 230
@@ -109,13 +109,13 @@ end
 #   }
 # }
 
-(1..12).each{|y|
+(4..12).each{|y|
   (1..5).each{|x|
     $enemies += [{
       "cx" => 150 + x * 10, # rand(100),
       "cy" => y * 10,  # rand(100)
   
-      "spr" => x == 5 ? 37 : 36,
+      "spr" => x == 5 ? 37 : 35,
       "hp" => x == 5 ? 3 : 1,
 
       "particle" => x == 5 ? 9 : 8
@@ -244,6 +244,7 @@ def update()
 
   if $shoot_cooldown <= 0 then
     $shoot_cooldown += 6
+    $last_closest = find_closest
     shoot_closest
   end
 end
@@ -251,16 +252,6 @@ end
 
 def render()
   cls 0
-
-  if keyp(48) then
-    dx = 10 - $px
-    dy = 10 - $py
-
-    $last_deg = rad2deg(Math.atan2(-dy, dx) % (2 * Math::PI))
-    $last_closest = find_closest
-
-    print "%.2f" % [$last_deg]
-  end
 
   # player sprite
   # spr 32, $px - 4, $py - 8, 0, 1, 0, 0, 1, 2
@@ -271,39 +262,39 @@ def render()
   end
 
   # bullets
-  (0...$bullets.size).each{|idx|
-    pix $bullets[idx]["cx"], $bullets[idx]["cy"], 12
-    circb $bullets[idx]["cx"], $bullets[idx]["cy"], 1, 7
-  }
+  $bullets.each do |bul|
+    pix bul["cx"], bul["cy"], 12
+    circb bul["cx"], bul["cy"], 1, 7
+  end
 
   # enemies
-  (0...$enemies.size).each{|idx|
-    # spr($enemies[idx] == $last_closest ? 36 : 33,
-    #   $enemies[idx]["cx"] - 4, $enemies[idx]["cy"] - 4,
-    #   0)
+  $enemies.each do |ene|
+    spr ene["spr"], ene["cx"] - 4, ene["cy"] - 4, 0
 
-    spr $enemies[idx]["spr"], $enemies[idx]["cx"] - 4, $enemies[idx]["cy"] - 4, 0
-  }
+    if $last_closest == ene then
+      circb ene["cx"] - 1, ene["cy"] - 1, 7, 7
+    end
+  end
 
   # particles
-  $particles.each{|part|
+  $particles.each do |part|
     pix part["cx"], part["cy"], part["colour"]
-  }
+  end
 
   # progress bar
   perc = ($enemy_count - $enemies.size) / $enemy_count.to_f
   width = perc * 106.67  # 320 / 3
-  spr 49, 52, 5, 0, 1, 0, 0, 2, 2
+  spr 49, 52, 0, 0, 1, 0, 0, 2, 2
 
-  rect 68, 10, 106, 6, 5
+  rect 68, 5, 106, 6, 5
   # fill
-  rect 68, 10, width, 6, 3
+  rect 68, 5, width, 6, 3
 
-  rectb 68, 10, 106, 6, 7
+  # rectb 68, 5, 106, 6, 7
 
   s = "%.f%%" % [perc * 100]
   width = print s, 0, -100, 0, false, 1, true
-  print s, 120 - width / 2, 10, 15, false, 1, true
+  print s, 120 - width / 2, 5, 7, false, 1, true
 
   if $lives <= 0 then
     s = "GAME OVER"
@@ -319,5 +310,10 @@ end
 
 def TIC()
   update
+
+  if keyp(18) then
+    # todo: restart game
+  end
+
   render
 end
