@@ -5,10 +5,18 @@
 // version: 0.1
 // script:  js
 
-let b_top = 20
-let b_bottom = 126
-let b_left = 10
-let b_right = 230
+Array.prototype.remove = function (item) {
+  if (!this.includes(item)) return
+  this.splice(this.indexOf(item), 1)
+}
+
+const rand = Math.random
+
+
+const b_top = 20
+const b_bottom = 126
+const b_left = 10
+const b_right = 230
 
 // game state
 /** player x */
@@ -21,302 +29,298 @@ let p_head = 1
 
 let lives = 1
 
-let last_deg = 0
+// let last_deg = 0
 let last_closest = null
 
-let bullets = []
-let enemies = []
+const bullets = []
+/** @type { Array<{ cx: number, cy: number, vx: number, vy: number }> } */
+const enemies = []
 // basic pixel particle
-let particles = []
+const particles = []
 
 /** in frames */
 let shoot_cooldown = 0
 
 
-function rad2deg(rad) {
-  return rad * 180 / Math.PI
-}
+const rad2deg = rad => rad * 180 / Math.PI;
+
+const get_player_dist = obj =>
+  (obj.cx - px) ** 2 + (obj.cy - py) ** 2;
+
+const get_dist = (a, b) =>
+  (a.cx - b.cx) ** 2 + (a.cy - b.cy) ** 2;
 
 
-function get_player_dist(obj) {
-  return (obj.cx - px) ** 2 + (obj.cy - py) ** 2
-}
 
+function find_closest() {
+  let dist = 6400
+  let output = null
 
-def get_dist(a, b)
-  (a["cx"] - b["cx"]) ** 2 + (a["cy"] - b["cy"]) ** 2
-end
+  for (const e of enemies) {
+    const temp_dist = get_player_dist(e)
 
-
-def find_closest
-  dist = 6400
-  output = nil
-
-  $enemies.each{|e|
-    temp_dist = get_player_dist(e)
-
-    if temp_dist < dist
+    if (temp_dist < dist) {
       dist = temp_dist
       output = e
-    end
+    }
   }
 
-  output
-end
+  return output
+}
 
 
-def shoot_closest
-  target = find_closest
+function shoot_closest() {
+  const target = find_closest()
 
-  if !target then return end
+  if (!target) return
 
-  dx = target["cx"] - $px
-  dy = target["cy"] - $py
+  const dx = target["cx"] - px
+  const dy = target["cy"] - py
 
-  rads = Math.atan2(dy, dx) + Math::PI / 2.0
+  const rads = Math.atan2(dy, dx) + Math.PI / 2
 
-  $bullets += [{
-    "cx" => $px,
-    "cy" => $py,
-    "vx" => Math.sin(rads) * 2,
-    "vy" => -Math.cos(rads) * 2
-  }]
-end
-
-def emit_particles(x, y, colour)
-  10.times do
-    $particles += [{
-      "cx" => x,
-      "cy" => y,
-      "vx" => rand - 0.5,
-      "vy" => rand - 0.5,
-      "colour" => colour,
-      # in frames
-      "ttl" => ((0.5 + rand / 2) * 60).to_i
-    }]
-  end
-end
+  bullets.push({
+    cx: px,
+    cy: py,
+    vx: Math.sin(rads) * 2,
+    vy: -Math.cos(rads) * 2
+  })
+}
 
 
-# init enemies
-# (1..12).each{|y|
-#   (1..13).each{|x|
-#     $enemies += [{
-#       "cx" => 100 + x * 10,
-#       "cy" => y * 10,
+function emit_particles(x, y, colour) {
+  let d = 10
 
-#       "spr" => 35,
-#       "hp" => 1
-#     }]
-#   }
-# }
+  while (d--)
+    particles.push({
+      cx: x,
+      cy: y,
+      vx: rand() - 0.5,
+      vy: rand() - 0.5,
+      colour: colour,
+      // in frames
+      ttl: Math.floor((0.5 + rand() / 2) * 60)
+    })
+}
 
-(4..12).each{|y|
-  (1..5).each{|x|
-    $enemies += [{
-      "cx" => 150 + x * 10, # rand(100),
-      "cy" => y * 10,  # rand(100)
+
+// init enemies
+// (1..12).each{|y|
+//   (1..13).each{|x|
+//     enemies += [{
+//       "cx" => 100 + x * 10,
+//       "cy" => y * 10,
+
+//       "spr" => 35,
+//       "hp" => 1
+//     }]
+//   }
+// }
+
+for (let y = 4; y <= 12; y++) {
+  for (let x = 1; x <= 5; x++) {
+    enemies.push({
+      cx: 150 + x * 10,
+      cy: y * 10,
   
-      "spr" => x == 5 ? 37 : 35,
-      "hp" => x == 5 ? 3 : 1,
+      spr: x == 5 ? 37 : 35,
+      hp: x == 5 ? 3 : 1,
 
-      "particle" => x == 5 ? 9 : 8
-    }]
+      particle: x == 5 ? 9 : 8
+    })
+  }
+}
+
+let enemy_count = enemies.length
+// trace(enemy_count + "")
+
+
+function update() {
+  if (lives <= 0) return
+
+  // movement controls
+	if (btn(0)) py = py-1
+	if (btn(1)) py = py+1
+
+	if (btn(2)) {
+    px = px-1
+    p_head = 0
+  }
+
+	if (btn(3)) {
+    px = px+1
+    p_head = 1
+  }
+
+  // check bounds
+  if (px < b_left) px = b_left
+  if (px > b_right) px = b_right 
+  if (py < b_top) py = b_top
+  if (py > b_bottom) py = b_bottom 
+
+
+  // update particles
+  for (const part of particles) {
+    part.cx += part.vx
+    part.cy += part.vy
+    part.ttl -= 1
+
+    if (part.ttl <= 0)
+      particles.remove(part)
+      // particles.splice(particles.indexOf(part), 1)
+  }
+
+
+  // update enemies
+  enemies.forEach(ene => {
+    let skip = false
+    if (skip || get_player_dist(ene) > 22500) return
+
+    if (get_player_dist(ene) <= 64) {
+      lives--
+      skip = true
+      return
+    }
+
+    const dx = ene.cx - px
+    const dy = ene.cy - py
+  
+    // Todo: recalculate once every 0.5 s
+    const rads = Math.atan2(dy, dx) + Math.PI / 2
+    const vx = -Math.sin(rads) / 2
+    const vy = Math.cos(rads) / 2
+
+    ene.cx += vx
+    ene.cy += vy
+
+
+    // don't allow clipping
+    enemies.forEach(ene2 => {
+      if (skip || ene == ene2) return
+
+      if (get_dist(ene, ene2) <= 36) {
+        ene.cx -= vx
+        ene.cy -= vy
+        skip = true
+        return
+      }
+    })
+
+    // check bounds
+    if (ene.cx < b_left) ene.cx = b_left  
+    if (ene.cx > b_right) ene.cx = b_right 
+    if (ene.cy < b_top) ene.cy = b_top   
+    if (ene.cy > b_bottom) ene.cy = b_bottom
+  })
+
+  // bullet hit check
+  for (const bul of bullets) {
+    bul.cx += bul.vx
+    bul.cy += bul.vy
+
+    skip = false
+
+    if (bul.cx < b_left || bul.cx > b_right ||
+      bul.cy < b_top || bul.cy > b_bottom)
+      skip = true
+    
+
+    if (skip) {
+      bullets.remove(bul)
+      continue
+    }
+
+    for (const ene of enemies) {
+      if (skip) continue
+
+      if (get_dist(ene, bul) < 36) {
+        ene.hp -= 1
+        emit_particles(ene.cx, ene.cy, ene.particle)
+
+        if (ene.hp <= 0) enemies.remove(ene)
+
+        bullets.remove(bul)
+        skip = true
+        continue
+      }
+    }
+  }
+
+  shoot_cooldown--
+
+  if (shoot_cooldown <= 0) {
+    shoot_cooldown += 6
+    last_closest = find_closest()
+    shoot_closest()
   }
 }
 
 
-$enemy_count = $enemies.size
+function render() {
+  cls(0)
 
-# trace "#{ $enemies[0].keys }"
+  // player sprite
+  // original stick figure
+  // spr(32, px - 4, py - 8, 0, 1, 0, 0, 1, 2)
 
-
-def update()
-  return if $lives <= 0
-
-  # movement controls
-	$py = $py-1 if btn(0)
-	$py = $py+1 if btn(1)
-
-	if btn(2) then
-    $px = $px-1
-    $p_head = 0
-  end
-
-	if btn(3) then
-    $px = $px+1
-    $p_head = 1
-  end
-
-  # check bounds
-  $px = $b_left if $px < $b_left
-  $px = $b_right if $px > $b_right
-  $py = $b_top if $py < $b_top
-  $py = $b_bottom if $py > $b_bottom
-
-
-  # update particles
-  $particles.each do |part|
-    part["cx"] += part["vx"]
-    part["cy"] += part["vy"]
-    part["ttl"] -= 1
-
-    if part["ttl"] <= 0 then
-      $particles -= [part]
-    end
-  end
-
-
-  # update enemies
-  $enemies.each_with_index do |ene, idx|
-    skip = false
-    next if skip || get_player_dist(ene) > 22500
-
-    if get_player_dist(ene) <= 64 then
-      $lives -= 1
-      skip = true
-      next
-    end
-
-    # trace "Outer: #{idx}"
-    dx = ene["cx"] - $px
-    dy = ene["cy"] - $py
-  
-    # Todo: recalculate once every 0.5 s
-    rads = Math.atan2(dy, dx) + Math::PI / 2.0
-    vx = -Math.sin(rads) / 2
-    vy = Math.cos(rads) / 2
-
-    ene["cx"] += vx
-    ene["cy"] += vy
-
-
-    # don't allow clipping
-    $enemies.each_with_index do |ene2, idx|
-      next if skip || ene == ene2
-
-      if get_dist(ene, ene2) <= 36 then
-        ene["cx"] -= vx
-        ene["cy"] -= vy
-        skip = true
-        next
-      end
-    end
-
-    # check bounds
-    ene["cx"] = $b_left if ene["cx"] < $b_left
-    ene["cx"] = $b_right if ene["cx"] > $b_right
-    ene["cy"] = $b_top if ene["cy"] < $b_top
-    ene["cy"] = $b_bottom if ene["cy"] > $b_bottom
-  end
-
-  # bullet hit check
-  $bullets.each do |bul|
-    bul["cx"] += bul["vx"]
-    bul["cy"] += bul["vy"]
-
-    skip = false
-
-    if bul["cx"] < $b_left || bul["cx"] > $b_right ||
-      bul["cy"] < $b_top || bul["cy"] > $b_bottom  then
-      skip = true
-    end
-
-    if skip then
-      $bullets -= [bul]
-      next
-    end
-
-    $enemies.each do |ene|
-      next if skip
-
-      if get_dist(ene, bul) < 36 then
-        ene["hp"] -= 1
-        emit_particles ene["cx"], ene["cy"], ene["particle"]
-
-        $enemies -= [ene] if ene["hp"] <= 0
-
-        $bullets -= [bul]
-        skip = true
-        next
-      end
-    end
-  end
-
-  $shoot_cooldown -= 1
-
-  if $shoot_cooldown <= 0 then
-    $shoot_cooldown += 6
-    $last_closest = find_closest
-    shoot_closest
-  end
-end
-
-
-def render()
-  cls 0
-
-  # player sprite
-  # spr 32, $px - 4, $py - 8, 0, 1, 0, 0, 1, 2
-  if $lives <= 0 then
-    spr 67, $px - 4, $py - 4, 0
+  // blue slime
+  if (lives <= 0)
+    spr(67, px - 4, py - 4, 0)
   else
-    spr 51 + $p_head, $px - 4, $py - 4, 0
-  end
+    spr(51 + p_head, px - 4, py - 4, 0)
 
-  # bullets
-  $bullets.each do |bul|
-    pix bul["cx"], bul["cy"], 12
-    circb bul["cx"], bul["cy"], 1, 7
-  end
+  // bullets
+  for (const bul of bullets) {
+    pix(bul.cx, bul.cy, 12)
+    circb(bul.cx, bul.cy, 1, 7)
+  }
 
-  # enemies
-  $enemies.each do |ene|
-    spr ene["spr"], ene["cx"] - 4, ene["cy"] - 4, 0
+  // enemies
+  for (const ene of enemies) {
+    spr(ene.spr, ene.cx - 4, ene.cy - 4, 0)
 
-    if $last_closest == ene then
-      circb ene["cx"] - 1, ene["cy"] - 1, 7, 7
-    end
-  end
+    if (last_closest == ene)
+      circb(ene.cx - 1, ene.cy - 1, 7, 7)
+  }
 
-  # particles
-  $particles.each do |part|
-    pix part["cx"], part["cy"], part["colour"]
-  end
+  // particles
+  for (const part of particles)
+    pix(part.cx, part.cy, part.colour)
+  
 
-  # progress bar
-  perc = ($enemy_count - $enemies.size) / $enemy_count.to_f
-  width = perc * 106.67  # 320 / 3
-  spr 49, 52, 0, 0, 1, 0, 0, 2, 2
+  // progress bar
+  let perc = (enemy_count - enemies.length) / enemy_count
+  let width = perc * 106.67  // 320 / 3
+  spr(49, 52, 0, 0, 1, 0, 0, 2, 2)
 
-  rect 68, 5, 106, 6, 5
-  # fill
-  rect 68, 5, width, 6, 3
+  rect(68, 5, 106, 6, 5)
+  // fill
+  rect(68, 5, width, 6, 3)
 
-  # rectb 68, 5, 106, 6, 7
+  // rectb 68, 5, 106, 6, 7
 
-  s = "%.f%%" % [perc * 100]
-  width = print s, 0, -100, 0, false, 1, true
-  print s, 120 - width / 2, 5, 7, false, 1, true
+  let s = (perc * 100).toFixed(0) + "%"
+  width = print(s, 0, -100, 0, false, 1, true)
+  print(s, 120 - width / 2, 5, 7, false, 1, true)
 
-  if $lives <= 0 then
+  if (lives <= 0) {
     s = "GAME OVER"
-    width = print s, 0, -100, 7, true, 2
-    print s, (240 - width) / 2, 10, 7, true, 2
+    width = print(s, 0, -100, 7, true, 2)
+    print(s, (240 - width) / 2, 10, 7, true, 2)
 
     s = "Press R to restart"
-    width = print s, 0, -100, 7, true
-    print s, (240 - width) / 2, 116, 7, true
-  end
-end
+    width = print(s, 0, -100, 7, true)
+    print(s, (240 - width) / 2, 116, 7, true)
+  }
+}
 
 
-def TIC()
-  update
+function TIC() {
+  update()
 
-  if keyp(18) then
-    # todo: restart game
-  end
+  if (keyp(18)) {
+    // todo: restart game
+  }
 
-  render
-end
+  render()
+}
