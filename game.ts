@@ -5,6 +5,12 @@
 // version: 0.1
 // script:  js
 
+declare global {
+  interface Array<T> {
+    remove(item: T): void;
+  }
+}
+
 Array.prototype.remove = function (item) {
   if (!this.includes(item)) return
   this.splice(this.indexOf(item), 1)
@@ -51,6 +57,8 @@ let p_bounce = false
 
 let p_atk_lvl = 1
 let p_atk = 1
+let p_lives = 1
+
 let xp = 0
 
 let inBase = true
@@ -60,34 +68,41 @@ function recalcAtk() {
 }
 
 
-let lives = 1
+let last_closest: Enemy | null = null
 
-// let last_deg = 0
-let last_closest = null
-
-/** @type { Array<{ cx: number, cy: number, vx: number, vy: number }> } */
-const bullets = []
-
-class Enemy {
-  cx; cy
-  vx; vy
-  particle
-
-  constructor(params) {
-    this.xp = params.xp
-
-  }
-
+interface Bullet extends Vector {
+  damage: number
 }
 
-/**
- * @type { Array<{
- * }> } */
-const enemies = []
+interface Vector {
+  cx: number;
+  cy: number;
+  vx: number;
+  vy: number;
+}
+
+const bullets: Array<Vector> = []
+
+interface Enemy extends Vector {
+  type: number;
+  spr: number;
+  hp: number;
+  xp: number;
+  /** colour */
+  particle: number;
+}
+
+const enemies: Array<Enemy> = []
 
 
 // basic pixel particle
-const particles = []
+interface Particle extends Vector {
+  colour: number;
+  /** in frames */
+  ttl: number;
+}
+
+const particles: Array<Particle> = []
 
 let tl_enemy_vel = 0
 
@@ -107,12 +122,12 @@ function recalcEnemyVel() {
 let shoot_cooldown = 0
 
 
-const rad2deg = rad => rad * 180 / Math.PI;
+const rad2deg = (rad: number) => rad * 180 / Math.PI;
 
-const get_player_dist = obj =>
+const get_player_dist = (obj: Vector) =>
   (obj.cx - px) ** 2 + (obj.cy - py) ** 2;
 
-const get_dist = (a, b) =>
+const get_dist = (a: Vector, b: Vector) =>
   (a.cx - b.cx) ** 2 + (a.cy - b.cy) ** 2;
 
 
@@ -153,7 +168,7 @@ function shoot_closest() {
 }
 
 
-function emit_particles(x, y, colour) {
+function emit_particles(x: number, y: number, colour: number) {
   let d = 10
 
   while (d--)
@@ -162,7 +177,7 @@ function emit_particles(x, y, colour) {
       cy: y,
       vx: rand() - 0.5,
       vy: rand() - 0.5,
-      colour: colour,
+      colour,
       // in frames
       ttl: Math.floor((0.5 + rand() / 2) * 60)
     })
@@ -170,7 +185,7 @@ function emit_particles(x, y, colour) {
 
 
 // init enemies
-function spawnEnemy(params) {
+function spawnEnemy(params: Partial<Enemy>) {
   switch (params.type) {
     case UNITS.male_citizen:
       params.spr = UNITS.male_citizen
@@ -199,7 +214,7 @@ let enemy_count = enemies.length
 
 
 function update() {
-  if (lives <= 0) return
+  if (p_lives <= 0) return
 
   // movement controls
 	if (btn(0)) py = py-1
@@ -254,7 +269,7 @@ function update() {
     if (skip || get_player_dist(ene) > 22500) return
 
     if (get_player_dist(ene) <= 64) {
-      lives--
+      p_lives--
       skip = true
       return
     }
@@ -286,7 +301,7 @@ function update() {
     bul.cx += bul.vx
     bul.cy += bul.vy
 
-    skip = false
+    let skip = false
 
     if (bul.cx < b_left || bul.cx > b_right ||
       bul.cy < b_top || bul.cy > b_bottom)
@@ -335,7 +350,7 @@ function render() {
   // spr(32, px - 4, py - 8, 0, 1, 0, 0, 1, 2)
 
   // blue slime
-  if (lives <= 0)
+  if (p_lives <= 0)
     spr(83, getRelativeX(px - 4), py - 4, 0)
   else
     spr((p_bounce ? 67 : 51) + p_head, getRelativeX(px - 4), py - 4, 0)
@@ -383,7 +398,7 @@ function render() {
   width = print(s, 0, -100, 0, false, 1, true)
   print(s, 120 - width / 2, 5, 7, false, 1, true)
 
-  if (lives <= 0) {
+  if (p_lives <= 0) {
     s = "GAME OVER"
     width = print(s, 0, -100, 7, true, 2)
     print(s, (240 - width) / 2, 10, 7, true, 2)
