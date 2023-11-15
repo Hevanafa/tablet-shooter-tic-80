@@ -36,6 +36,14 @@ let px = 20
 /** player y */
 let py = 78
 
+let cam_x = 0
+
+/**
+ * @param {number} x 
+ */
+const getRelativeX = x => x - cam_x;
+
+
 // 0: left, 1: right
 let p_head = 1
 
@@ -152,12 +160,20 @@ function update() {
 	if (btn(1)) py = py+1
 
 	if (btn(2)) {
-    px = px-1
+    px--
+
+    if (getRelativeX(px) < 10)
+      px = cam_x + 10
+
     p_head = 0
   }
 
 	if (btn(3)) {
-    px = px+1
+    px++
+
+    if (cam_x < px - 120)
+      cam_x = px - 120
+
     p_head = 1
   }
 
@@ -274,27 +290,28 @@ function render() {
 
   // blue slime
   if (lives <= 0)
-    spr(67, px - 4, py - 4, 0)
+    spr(67, getRelativeX(px - 4), py - 4, 0)
   else
-    spr(51 + p_head, px - 4, py - 4, 0)
+    spr(51 + p_head, getRelativeX(px - 4), py - 4, 0)
 
   // bullets
   for (const bul of bullets) {
-    pix(bul.cx, bul.cy, 12)
-    circb(bul.cx, bul.cy, 1, 7)
+    const x = getRelativeX(bul.cx)
+    pix(x, bul.cy, 12)
+    circb(x, bul.cy, 1, 7)
   }
 
   // enemies
   for (const ene of enemies) {
-    spr(ene.spr, ene.cx - 4, ene.cy - 4, 0)
+    spr(ene.spr, getRelativeX(ene.cx - 4), ene.cy - 4, 0)
 
     if (last_closest == ene)
-      circb(ene.cx - 1, ene.cy - 1, 7, 7)
+      circb(getRelativeX(ene.cx - 1), ene.cy - 1, 7, 7)
   }
 
   // particles
   for (const part of particles)
-    pix(part.cx, part.cy, part.colour)
+    pix(getRelativeX(part.cx), part.cy, part.colour)
   
 
   // progress bar
