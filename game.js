@@ -18,6 +18,18 @@ const b_bottom = 126
 const b_left = 10
 const b_right = 230
 
+/** used in sprites */
+const UNITS = {
+  male_citizen: 53,
+  female_citizen: 54,
+  ranger: 55,
+  knight: 56,
+  guard: 57,
+  archer: 58,
+  elite_guard: 59
+}
+
+
 // game state
 /** player x */
 let px = 20
@@ -105,31 +117,28 @@ function emit_particles(x, y, colour) {
 
 
 // init enemies
-// (1..12).each{|y|
-//   (1..13).each{|x|
-//     enemies += [{
-//       "cx" => 100 + x * 10,
-//       "cy" => y * 10,
+function spawnEnemy(params) {
+  switch (params.type) {
+    case UNITS.male_citizen:
+      params.spr = UNITS.male_citizen;
+      params.hp = 1;
+      params.particle = 8;
+  }
 
-//       "spr" => 35,
-//       "hp" => 1
-//     }]
-//   }
-// }
+  enemies.push(params);
+}
 
-for (let y = 4; y <= 12; y++) {
+for (let y = 9; y <= 12; y++) {
   for (let x = 1; x <= 5; x++) {
-    enemies.push({
+    spawnEnemy({
       cx: 150 + x * 10,
       cy: y * 10,
-  
-      spr: x == 5 ? 37 : 35,
-      hp: x == 5 ? 3 : 1,
-
-      particle: x == 5 ? 9 : 8
+      type: UNITS.male_citizen
     })
   }
 }
+
+
 
 let enemy_count = enemies.length
 // trace(enemy_count + "")
@@ -249,7 +258,7 @@ function update() {
   shoot_cooldown--
 
   if (shoot_cooldown <= 0) {
-    shoot_cooldown += 6
+    shoot_cooldown += 30
     last_closest = find_closest()
     shoot_closest()
   }
