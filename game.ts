@@ -5,6 +5,8 @@
 // version: 0.1
 // script:  js
 
+/// <reference types="./tic.d.ts" />
+
 declare global {
   interface Array<T> {
     remove(item: T): void;
@@ -44,10 +46,7 @@ let py = 78
 
 let cam_x = 0
 
-/**
- * @param {number} x 
- */
-const getRelativeX = x => x - cam_x;
+const getRelativeX = (x: number) => x - cam_x;
 
 
 // 0: left, 1: right
@@ -194,7 +193,7 @@ function spawnEnemy(params: Partial<Enemy>) {
       params.particle = 8
   }
 
-  enemies.push(params);
+  enemies.push(params as Enemy);
 }
 
 for (let y = 4; y <= 9; y++) {
