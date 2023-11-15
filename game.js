@@ -46,6 +46,9 @@ const getRelativeX = x => x - cam_x;
 
 // 0: left, 1: right
 let p_head = 1
+let tl_player_bounce = 30
+let p_bounce = false
+
 
 let lives = 1
 
@@ -136,7 +139,7 @@ function spawnEnemy(params) {
   enemies.push(params);
 }
 
-for (let y = 9; y <= 12; y++) {
+for (let y = 4; y <= 9; y++) {
   for (let x = 1; x <= 5; x++) {
     spawnEnemy({
       cx: 150 + x * 10,
@@ -290,9 +293,17 @@ function render() {
 
   // blue slime
   if (lives <= 0)
-    spr(67, getRelativeX(px - 4), py - 4, 0)
+    spr(83, getRelativeX(px - 4), py - 4, 0)
   else
-    spr(51 + p_head, getRelativeX(px - 4), py - 4, 0)
+    spr((p_bounce ? 67 : 51) + p_head, getRelativeX(px - 4), py - 4, 0)
+
+  tl_player_bounce--
+
+  if (tl_player_bounce <= 0) {
+    tl_player_bounce = 30
+    p_bounce = !p_bounce
+  }
+
 
   // bullets
   for (const bul of bullets) {
