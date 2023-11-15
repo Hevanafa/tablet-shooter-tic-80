@@ -49,6 +49,16 @@ let p_head = 1
 let tl_player_bounce = 30
 let p_bounce = false
 
+let p_atk_lvl = 1
+let p_atk = 1
+let xp = 0
+
+let inBase = true
+
+function recalcAtk() {
+  p_atk = 1 + p_atk_lvl / 2
+}
+
 
 let lives = 1
 
@@ -58,8 +68,24 @@ let last_closest = null
 /** @type { Array<{ cx: number, cy: number, vx: number, vy: number }> } */
 const bullets = []
 
-/** @type { Array<{ cx: number, cy: number, vx: number, vy: number }> } */
+class Enemy {
+  cx; cy
+  vx; vy
+  particle
+
+  constructor(params) {
+    this.xp = params.xp
+
+  }
+
+}
+
+/**
+ * @type { Array<{
+ * }> } */
 const enemies = []
+
+
 // basic pixel particle
 const particles = []
 
@@ -147,9 +173,10 @@ function emit_particles(x, y, colour) {
 function spawnEnemy(params) {
   switch (params.type) {
     case UNITS.male_citizen:
-      params.spr = UNITS.male_citizen;
-      params.hp = 1;
-      params.particle = 8;
+      params.spr = UNITS.male_citizen
+      params.hp = 1
+      params.xp = 1
+      params.particle = 8
   }
 
   enemies.push(params);
@@ -278,7 +305,10 @@ function update() {
         ene.hp -= 1
         emit_particles(ene.cx, ene.cy, ene.particle)
 
-        if (ene.hp <= 0) enemies.remove(ene)
+        if (ene.hp <= 0) {
+          xp += ene.xp
+          enemies.remove(ene)
+        }
 
         bullets.remove(bul)
         skip = true
