@@ -21,10 +21,17 @@ Array.prototype.remove = function (item) {
 const rand = Math.random
 
 
-const b_top = 20
-const b_bottom = 126
-const b_left = 10
-const b_right = 230
+// const b_top = 20
+// const b_bottom = 126
+// const b_left = 10
+// const b_right = 230
+
+const bounds = {
+  top: 20,
+  bottom: 126,
+  left: 10,
+  right: 230
+}
 
 /** used in sprites */
 const UNITS = {
@@ -40,17 +47,17 @@ const UNITS = {
 
 // game state
 /** player x */
-let px = 20
+let playerX = 20
 /** player y */
 let py = 78
 
-let cam_x = 0
+let cameraX = 0
 
-const getRelativeX = (x: number) => x - cam_x;
+const getRelativeX = (x: number) => x - cameraX;
 
 
 // 0: left, 1: right
-let p_head = 1
+let playerHead = 1
 let tl_player_bounce = 30
 let p_bounce = false
 
@@ -107,7 +114,7 @@ let tl_enemy_vel = 0
 
 function recalcEnemyVel() {
   for (const ene of enemies) {
-    const dx = ene.cx - px
+    const dx = ene.cx - playerX
     const dy = ene.cy - py
   
     // Todo: recalculate once every 0.5 s
@@ -124,7 +131,7 @@ let shoot_cooldown = 0
 const rad2deg = (rad: number) => rad * 180 / Math.PI;
 
 const get_player_dist = (obj: Vector) =>
-  (obj.cx - px) ** 2 + (obj.cy - py) ** 2;
+  (obj.cx - playerX) ** 2 + (obj.cy - py) ** 2;
 
 const get_dist = (a: Vector, b: Vector) =>
   (a.cx - b.cx) ** 2 + (a.cy - b.cy) ** 2;
@@ -153,13 +160,13 @@ function shoot_closest() {
 
   if (!target) return
 
-  const dx = target["cx"] - px
+  const dx = target["cx"] - playerX
   const dy = target["cy"] - py
 
   const rads = Math.atan2(dy, dx) + Math.PI / 2
 
   bullets.push({
-    cx: px,
+    cx: playerX,
     cy: py,
     vx: Math.sin(rads) * 2,
     vy: -Math.cos(rads) * 2
@@ -208,7 +215,7 @@ for (let y = 4; y <= 9; y++) {
 
 
 
-let enemy_count = enemies.length
+let enemyCount = enemies.length
 // trace(enemy_count + "")
 
 
@@ -220,28 +227,28 @@ function update() {
 	if (btn(1)) py = py+1
 
 	if (btn(2)) {
-    px--
+    playerX--
 
-    if (getRelativeX(px) < 10)
-      px = cam_x + 10
+    if (getRelativeX(playerX) < 10)
+      playerX = cameraX + 10
 
-    p_head = 0
+    playerHead = 0
   }
 
 	if (btn(3)) {
-    px++
+    playerX++
 
-    if (cam_x < px - 120)
-      cam_x = px - 120
+    if (cameraX < playerX - 120)
+      cameraX = playerX - 120
 
-    p_head = 1
+    playerHead = 1
   }
 
   // check bounds
-  if (px < b_left) px = b_left
-  if (px > b_right) px = b_right 
-  if (py < b_top) py = b_top
-  if (py > b_bottom) py = b_bottom 
+  if (playerX < bounds.left) playerX = bounds.left
+  if (playerX > bounds.right) playerX = bounds.right 
+  if (py < bounds.top) py = bounds.top
+  if (py > bounds.bottom) py = bounds.bottom 
 
 
   // update particles
@@ -289,10 +296,10 @@ function update() {
     })
 
     // check bounds
-    if (ene.cx < b_left) ene.cx = b_left  
-    if (ene.cx > b_right) ene.cx = b_right 
-    if (ene.cy < b_top) ene.cy = b_top   
-    if (ene.cy > b_bottom) ene.cy = b_bottom
+    if (ene.cx < bounds.left) ene.cx = bounds.left  
+    if (ene.cx > bounds.right) ene.cx = bounds.right 
+    if (ene.cy < bounds.top) ene.cy = bounds.top   
+    if (ene.cy > bounds.bottom) ene.cy = bounds.bottom
   })
 
   // bullet hit check
@@ -302,8 +309,8 @@ function update() {
 
     let skip = false
 
-    if (bul.cx < b_left || bul.cx > b_right ||
-      bul.cy < b_top || bul.cy > b_bottom)
+    if (bul.cx < bounds.left || bul.cx > bounds.right ||
+      bul.cy < bounds.top || bul.cy > bounds.bottom)
       skip = true
     
 
@@ -350,9 +357,9 @@ function render() {
 
   // blue slime
   if (p_lives <= 0)
-    spr(83, getRelativeX(px - 4), py - 4, 0)
+    spr(83, getRelativeX(playerX - 4), py - 4, 0)
   else
-    spr((p_bounce ? 67 : 51) + p_head, getRelativeX(px - 4), py - 4, 0)
+    spr((p_bounce ? 67 : 51) + playerHead, getRelativeX(playerX - 4), py - 4, 0)
 
   tl_player_bounce--
 
@@ -371,7 +378,7 @@ function render() {
 
   // enemies
   for (const ene of enemies) {
-    spr(ene.spr, getRelativeX(ene.cx - 4), ene.cy - 4, 0)
+    spr(ene.spr, getRelativeX(ene.cx - 4), ene.cy - 4, 0, 1, ene.vx > 0 ? 1 : 0)
 
     if (last_closest == ene)
       circb(getRelativeX(ene.cx - 1), ene.cy - 1, 7, 7)
@@ -383,13 +390,18 @@ function render() {
   
 
   // progress bar
-  let perc = (enemy_count - enemies.length) / enemy_count
+  const perc = (enemyCount - enemies.length) / enemyCount
   let width = perc * 106.67  // 320 / 3
   spr(49, 52, 0, 0, 1, 0, 0, 2, 2)
 
   rect(68, 5, 106, 6, 5)
   // fill
   rect(68, 5, width, 6, 3)
+
+
+  // star (XP)
+  spr(21, 4, 4, 0)
+  print(`${ xp }`, 12, 4, 14, true, 1, true)
 
   // rectb 68, 5, 106, 6, 7
 

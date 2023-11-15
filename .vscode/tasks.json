@@ -1,0 +1,15 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "tsc",
+			"command": "-p .\\tsconfig.json",
+			"problemMatcher": [],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"label": "tsc: build"
+		}
+	]
+}
