@@ -34,14 +34,17 @@ const bounds = {
 }
 
 /** used in sprites */
-const UNITS = {
-  male_citizen: 53,
-  female_citizen: 54,
-  ranger: 55,
-  knight: 56,
-  guard: 57,
-  archer: 58,
-  elite_guard: 59
+enum UNITS {
+  default_pill = 35,
+  orange_pill = 37,
+
+  male_citizen = 53,
+  female_citizen = 54,
+  ranger = 55,
+  knight = 56,
+  guard = 57,
+  archer = 58,
+  elite_guard = 59
 }
 
 
@@ -64,6 +67,7 @@ let p_bounce = false
 let p_atk_lvl = 1
 let p_atk = 1
 let p_lives = 1
+let p_firerate = 5
 
 let xp = 0
 
@@ -90,7 +94,7 @@ interface Vector {
 const bullets: Array<Vector> = []
 
 interface Enemy extends Vector {
-  type: number;
+  type: UNITS;
   spr: number;
   hp: number;
   xp: number;
@@ -190,11 +194,23 @@ function emit_particles(x: number, y: number, colour: number) {
 }
 
 
-// init enemies
 function spawnEnemy(params: Partial<Enemy>) {
+  params.spr = params.type
+
   switch (params.type) {
+    case UNITS.default_pill:
+      params.hp = 1
+      params.xp = 1
+      params.particle = 8
+      break
+
+    case UNITS.orange_pill:
+      params.hp = 3
+      params.xp = 2
+      params.particle = 9
+      break;
+
     case UNITS.male_citizen:
-      params.spr = UNITS.male_citizen
       params.hp = 1
       params.xp = 1
       params.particle = 8
@@ -203,15 +219,26 @@ function spawnEnemy(params: Partial<Enemy>) {
   enemies.push(params as Enemy);
 }
 
-for (let y = 4; y <= 9; y++) {
+// init enemies
+for (let y = 4; y <= 12; y++) {
   for (let x = 1; x <= 5; x++) {
     spawnEnemy({
       cx: 150 + x * 10,
       cy: y * 10,
-      type: UNITS.male_citizen
+      type: x == 5 ? UNITS.orange_pill : UNITS.default_pill,
     })
   }
 }
+
+// for (let y = 4; y <= 9; y++) {
+//   for (let x = 1; x <= 5; x++) {
+//     spawnEnemy({
+//       cx: 150 + x * 10,
+//       cy: y * 10,
+//       type: UNITS.male_citizen
+//     })
+//   }
+// }
 
 
 
@@ -341,7 +368,7 @@ function update() {
   shoot_cooldown--
 
   if (shoot_cooldown <= 0) {
-    shoot_cooldown += 30
+    shoot_cooldown += Math.floor(60 / p_firerate)
     last_closest = find_closest()
     shoot_closest()
   }
