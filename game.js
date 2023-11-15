@@ -55,11 +55,27 @@ let lives = 1
 // let last_deg = 0
 let last_closest = null
 
+/** @type { Array<{ cx: number, cy: number, vx: number, vy: number }> } */
 const bullets = []
+
 /** @type { Array<{ cx: number, cy: number, vx: number, vy: number }> } */
 const enemies = []
 // basic pixel particle
 const particles = []
+
+let tl_enemy_vel = 0
+
+function recalcEnemyVel() {
+  for (const ene of enemies) {
+    const dx = ene.cx - px
+    const dy = ene.cy - py
+  
+    // Todo: recalculate once every 0.5 s
+    const rads = Math.atan2(dy, dx) + Math.PI / 2
+    ene.vx = -Math.sin(rads) / 2
+    ene.vy = Math.cos(rads) / 2
+  }
+}
 
 /** in frames */
 let shoot_cooldown = 0
@@ -198,6 +214,12 @@ function update() {
       // particles.splice(particles.indexOf(part), 1)
   }
 
+  tl_enemy_vel--
+
+  if (tl_enemy_vel <= 0) {
+    tl_enemy_vel = 30
+    recalcEnemyVel()
+  }
 
   // update enemies
   enemies.forEach(ene => {
@@ -210,25 +232,16 @@ function update() {
       return
     }
 
-    const dx = ene.cx - px
-    const dy = ene.cy - py
-  
-    // Todo: recalculate once every 0.5 s
-    const rads = Math.atan2(dy, dx) + Math.PI / 2
-    const vx = -Math.sin(rads) / 2
-    const vy = Math.cos(rads) / 2
-
-    ene.cx += vx
-    ene.cy += vy
-
+    ene.cx += ene.vx
+    ene.cy += ene.vy
 
     // don't allow clipping
     enemies.forEach(ene2 => {
       if (skip || ene == ene2) return
 
       if (get_dist(ene, ene2) <= 36) {
-        ene.cx -= vx
-        ene.cy -= vy
+        ene.cx -= ene.vx
+        ene.cy -= ene.vy
         skip = true
         return
       }
